@@ -120,7 +120,10 @@ function SortableMessage({ message, onDelete }: { message: MessageBlock; onDelet
             {message.tokens} tokens
           </span>
           <button 
-            onClick={() => onDelete(message.id)}
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete(message.id);
+            }}
             className="opacity-0 group-hover:opacity-100 p-1.5 hover:bg-red-100 hover:text-red-600 rounded-md transition-all"
           >
             <Trash2 className="w-4 h-4" />
