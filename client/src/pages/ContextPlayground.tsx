@@ -1,448 +1,502 @@
 import React, { useState } from 'react';
-import { DndContext, DragOverlay, useDraggable, DragEndEvent, DragStartEvent, closestCenter } from '@dnd-kit/core';
-import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from '@dnd-kit/sortable';
+import {
+	DndContext,
+	DragOverlay,
+	useDraggable,
+	DragEndEvent,
+	DragStartEvent,
+	closestCenter,
+} from '@dnd-kit/core';
+import {
+	SortableContext,
+	verticalListSortingStrategy,
+	useSortable,
+	arrayMove,
+} from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { nanoid } from 'nanoid';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, User, Bot, Trash2, Info, ArrowDown, Plus } from 'lucide-react';
+import {
+	Sparkles,
+	User,
+	Bot,
+	Trash2,
+	Info,
+	ArrowDown,
+	Plus,
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 // Types
 type BlockType = 'user' | 'assistant' | 'system';
 
 interface MessageBlock {
-  id: string;
-  type: BlockType;
-  content: string;
-  tokens: number;
+	id: string;
+	type: BlockType;
+	content: string;
+	tokens: number;
 }
 
 // Initial Data
 const INITIAL_BLOCKS: MessageBlock[] = [
-  { id: 'system-1', type: 'system', content: 'You are a helpful AI assistant.', tokens: 7 },
+	{
+		id: 'system-1',
+		type: 'system',
+		content: 'You are a helpful AI assistant.',
+		tokens: 7,
+	},
 ];
 
 // --- Draggable Source Component ---
 function SourceBlock({ type }: { type: BlockType }) {
-  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
-    id: `source-${type}`,
-    data: { type, isSource: true },
-  });
+	const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+		id: `source-${type}`,
+		data: { type, isSource: true },
+	});
 
-  const styles = {
-    user: 'bg-blue-100 text-blue-800 border-blue-200 hover:bg-blue-50',
-    assistant: 'bg-teal-100 text-teal-800 border-teal-200 hover:bg-teal-50',
-    system: 'bg-purple-100 text-purple-800 border-purple-200 hover:bg-purple-50',
-  };
+	const styles = {
+		user: 'bg-blue-100 text-blue-800 border-blue-200 hover:bg-blue-50',
+		assistant: 'bg-teal-100 text-teal-800 border-teal-200 hover:bg-teal-50',
+		system:
+			'bg-purple-100 text-purple-800 border-purple-200 hover:bg-purple-50',
+	};
 
-  const icons = {
-    user: <User className="w-4 h-4" />,
-    assistant: <Bot className="w-4 h-4" />,
-    system: <Sparkles className="w-4 h-4" />,
-  };
+	const icons = {
+		user: <User className="w-4 h-4" />,
+		assistant: <Bot className="w-4 h-4" />,
+		system: <Sparkles className="w-4 h-4" />,
+	};
 
-  const labels = {
-    user: 'User Input',
-    assistant: 'AI Response',
-    system: 'System Prompt',
-  };
+	const labels = {
+		user: 'User Input',
+		assistant: 'AI Response',
+		system: 'System Prompt',
+	};
 
-  return (
-    <div
-      ref={setNodeRef}
-      {...listeners}
-      {...attributes}
-      className={cn(
-        "flex items-center gap-3 p-4 rounded-xl border-2 cursor-grab active:cursor-grabbing transition-all shadow-sm",
-        styles[type],
-        isDragging ? "opacity-50" : "opacity-100"
-      )}
-    >
-      <div className="p-2 bg-white/50 rounded-lg">
-        {icons[type]}
-      </div>
-      <span className="font-semibold font-heading">{labels[type]}</span>
-    </div>
-  );
+	return (
+		<div
+			ref={setNodeRef}
+			{...listeners}
+			{...attributes}
+			className={cn(
+				'flex items-center gap-3 p-4 rounded-xl border-2 cursor-grab active:cursor-grabbing transition-all shadow-sm',
+				styles[type],
+				isDragging ? 'opacity-50' : 'opacity-100'
+			)}
+		>
+			<div className="p-2 bg-white/50 rounded-lg">{icons[type]}</div>
+			<span className="font-semibold font-heading">{labels[type]}</span>
+		</div>
+	);
 }
 
 // --- Sortable Item Component ---
-function SortableMessage({ message, onDelete }: { message: MessageBlock; onDelete: (id: string) => void }) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: message.id });
+function SortableMessage({
+	message,
+	onDelete,
+}: {
+	message: MessageBlock;
+	onDelete: (id: string) => void;
+}) {
+	const {
+		attributes,
+		listeners,
+		setNodeRef,
+		transform,
+		transition,
+		isDragging,
+	} = useSortable({ id: message.id });
 
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-  };
+	const style = {
+		transform: CSS.Transform.toString(transform),
+		transition,
+	};
 
-  const styles = {
-    user: 'bg-blue-50 border-blue-200',
-    assistant: 'bg-teal-50 border-teal-200',
-    system: 'bg-purple-50 border-purple-200',
-  };
+	const styles = {
+		user: 'bg-blue-50 border-blue-200',
+		assistant: 'bg-teal-50 border-teal-200',
+		system: 'bg-purple-50 border-purple-200',
+	};
 
-  const icons = {
-    user: <User className="w-4 h-4 text-blue-600" />,
-    assistant: <Bot className="w-4 h-4 text-teal-600" />,
-    system: <Sparkles className="w-4 h-4 text-purple-600" />,
-  };
+	const icons = {
+		user: <User className="w-4 h-4 text-blue-600" />,
+		assistant: <Bot className="w-4 h-4 text-teal-600" />,
+		system: <Sparkles className="w-4 h-4 text-purple-600" />,
+	};
 
-  return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      {...attributes}
-      className={cn(
-        "relative group flex flex-col gap-2 p-4 rounded-xl border-2 shadow-sm bg-white transition-all",
-        styles[message.type],
-        isDragging ? "z-50 shadow-xl scale-105 rotate-1" : "z-0"
-      )}
-    >
-      {/* Header */}
-      <div className="flex items-center justify-between" {...listeners}>
-        <div className="flex items-center gap-2">
-          <div className={cn("p-1.5 rounded-md bg-white shadow-sm")}>
-            {icons[message.type]}
-          </div>
-          <span className="text-xs font-bold uppercase tracking-wider opacity-60 font-heading">
-            {message.type}
-          </span>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-mono text-muted-foreground bg-white/50 px-2 py-1 rounded-md">
-            {message.tokens} tokens
-          </span>
-          <button 
-            onClick={(e) => {
-              e.stopPropagation();
-              onDelete(message.id);
-            }}
-            className="opacity-0 group-hover:opacity-100 p-1.5 hover:bg-red-100 hover:text-red-600 rounded-md transition-all"
-          >
-            <Trash2 className="w-4 h-4" />
-          </button>
-        </div>
-      </div>
+	return (
+		<div
+			ref={setNodeRef}
+			style={style}
+			{...attributes}
+			className={cn(
+				'relative group flex flex-col gap-2 p-4 rounded-xl border-2 shadow-sm bg-white transition-all',
+				styles[message.type],
+				isDragging ? 'z-50 shadow-xl scale-105 rotate-1' : 'z-0'
+			)}
+		>
+			{/* Header */}
+			<div className="flex items-center justify-between" {...listeners}>
+				<div className="flex items-center gap-2">
+					<div className={cn('p-1.5 rounded-md bg-white shadow-sm')}>
+						{icons[message.type]}
+					</div>
+					<span className="text-xs font-bold uppercase tracking-wider opacity-60 font-heading">
+						{message.type}
+					</span>
+				</div>
+				<div className="flex items-center gap-2">
+					<span className="text-xs font-mono text-muted-foreground bg-white/50 px-2 py-1 rounded-md">
+						{message.tokens} tokens
+					</span>
+					<button
+						onClick={(e) => {
+							e.stopPropagation();
+							onDelete(message.id);
+						}}
+						className="opacity-0 group-hover:opacity-100 p-1.5 hover:bg-red-100 hover:text-red-600 rounded-md transition-all"
+					>
+						<Trash2 className="w-4 h-4" />
+					</button>
+				</div>
+			</div>
 
-      {/* Content */}
-      <div className="pl-11 pr-4">
-        <p className="text-sm leading-relaxed font-medium text-foreground/80">
-          {message.content}
-        </p>
-      </div>
-      
-      {/* Connector Line (Visual) */}
-      <div className="absolute -bottom-6 left-6 w-0.5 h-6 bg-border -z-10 last:hidden" />
-    </div>
-  );
+			{/* Content */}
+			<div className="pl-11 pr-4">
+				<p className="text-sm leading-relaxed font-medium text-foreground/80">
+					{message.content}
+				</p>
+			</div>
+
+			{/* Connector Line (Visual) */}
+			<div className="absolute -bottom-6 left-6 w-0.5 h-6 bg-border -z-10 last:hidden" />
+		</div>
+	);
 }
 
 // --- Main Page Component ---
 export default function ContextPlayground() {
-  const [messages, setMessages] = useState<MessageBlock[]>(INITIAL_BLOCKS);
-  const [activeId, setActiveId] = useState<string | null>(null);
-  const [draggedType, setDraggedType] = useState<BlockType | null>(null);
-  const [inputValue, setInputValue] = useState("");
-  const [isAiThinking, setIsAiThinking] = useState(false);
-  const [scanningIndex, setScanningIndex] = useState<number | null>(null);
+	const [messages, setMessages] = useState<MessageBlock[]>(INITIAL_BLOCKS);
+	const [activeId, setActiveId] = useState<string | null>(null);
+	const [draggedType, setDraggedType] = useState<BlockType | null>(null);
+	const [inputValue, setInputValue] = useState('');
+	const [isAiThinking, setIsAiThinking] = useState(false);
+	const [scanningIndex, setScanningIndex] = useState<number | null>(null);
 
-  // Calculate Stats
-  const totalTokens = messages.reduce((acc, msg) => acc + msg.tokens, 0);
-  const maxContext = 4096;
-  const usagePercent = (totalTokens / maxContext) * 100;
+	// Calculate Stats
+	const totalTokens = messages.reduce((acc, msg) => acc + msg.tokens, 0);
+	const maxContext = 4096;
+	const usagePercent = (totalTokens / maxContext) * 100;
 
-  const handleSendMessage = async (e?: React.FormEvent) => {
-    e?.preventDefault();
-    if (!inputValue.trim()) return;
+	const handleSendMessage = async (e?: React.FormEvent) => {
+		e?.preventDefault();
+		if (!inputValue.trim()) return;
 
-    // 1. Add User Message
-    const userMsg: MessageBlock = {
-      id: nanoid(),
-      type: 'user',
-      content: inputValue,
-      tokens: Math.ceil(inputValue.length / 4),
-    };
-    
-    setMessages(prev => [...prev, userMsg]);
-    setInputValue("");
-    setIsAiThinking(true);
+		// 1. Add User Message
+		const userMsg: MessageBlock = {
+			id: nanoid(),
+			type: 'user',
+			content: inputValue,
+			tokens: Math.ceil(inputValue.length / 4),
+		};
 
-    // 2. Simulate "Reading Context" (Scanning Animation)
-    // Scan through each message before generating response
-    for (let i = 0; i <= messages.length; i++) {
-      setScanningIndex(i);
-      await new Promise(r => setTimeout(r, 300)); // Speed of reading
-    }
-    setScanningIndex(null);
+		setMessages((prev) => [...prev, userMsg]);
+		setInputValue('');
+		setIsAiThinking(true);
 
-    // 3. Simulate AI Generation Delay
-    await new Promise(r => setTimeout(r, 800));
+		// 2. Simulate "Reading Context" (Scanning Animation)
+		// Scan through each message before generating response
+		for (let i = 0; i <= messages.length; i++) {
+			setScanningIndex(i);
+			await new Promise((r) => setTimeout(r, 300)); // Speed of reading
+		}
+		setScanningIndex(null);
 
-    // 4. Add AI Response
-    const aiMsg: MessageBlock = {
-      id: nanoid(),
-      type: 'assistant',
-      content: "That's an interesting point! Because I'm a simulated AI for this demo, I'm just echoing that I received your message. In a real system, I would use all the blocks above to generate this answer.",
-      tokens: 35,
-    };
+		// 3. Simulate AI Generation Delay
+		await new Promise((r) => setTimeout(r, 800));
 
-    setMessages(prev => [...prev, aiMsg]);
-    setIsAiThinking(false);
-  };
+		// 4. Add AI Response
+		const aiMsg: MessageBlock = {
+			id: nanoid(),
+			type: 'assistant',
+			content:
+				"That's an interesting point! Because I'm a simulated AI for this demo, I'm just echoing that I received your message. In a real system, I would use all the blocks above to generate this answer.",
+			tokens: 35,
+		};
 
-  const handleDragStart = (event: DragStartEvent) => {
-    const { active } = event;
-    setActiveId(active.id as string);
-    
-    if (active.data.current?.isSource) {
-      setDraggedType(active.data.current.type);
-    }
-  };
-  
-  // ... existing handleDragEnd ...
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-    setActiveId(null);
-    setDraggedType(null);
+		setMessages((prev) => [...prev, aiMsg]);
+		setIsAiThinking(false);
+	};
 
-    if (!over) return;
+	const handleDragStart = (event: DragStartEvent) => {
+		const { active } = event;
+		setActiveId(active.id as string);
 
-    // Handle dropping source block
-    if (active.data.current?.isSource) {
-      const type = active.data.current.type as BlockType;
-      const newBlock: MessageBlock = {
-        id: nanoid(),
-        type,
-        content: type === 'user' 
-          ? 'Can you explain quantum computing simply?' 
-          : type === 'assistant' 
-          ? 'Quantum computing uses quantum bits or qubits...'
-          : 'You are an expert in physics.',
-        tokens: Math.floor(Math.random() * 20) + 5,
-      };
+		if (active.data.current?.isSource) {
+			setDraggedType(active.data.current.type);
+		}
+	};
 
-      setMessages((items) => [...items, newBlock]);
-      return;
-    }
+	// ... existing handleDragEnd ...
+	const handleDragEnd = (event: DragEndEvent) => {
+		const { active, over } = event;
+		setActiveId(null);
+		setDraggedType(null);
 
-    // Handle reordering
-    if (active.id !== over.id) {
-      setMessages((items) => {
-        const oldIndex = items.findIndex((i) => i.id === active.id);
-        const newIndex = items.findIndex((i) => i.id === over.id);
-        return arrayMove(items, oldIndex, newIndex);
-      });
-    }
-  };
+		if (!over) return;
 
-  const handleDelete = (id: string) => {
-    setMessages(messages.filter(m => m.id !== id));
-  };
+		// Handle dropping source block
+		if (active.data.current?.isSource) {
+			const type = active.data.current.type as BlockType;
+			const newBlock: MessageBlock = {
+				id: nanoid(),
+				type,
+				content:
+					type === 'user'
+						? 'Can you explain quantum computing simply?'
+						: type === 'assistant'
+						? 'Quantum computing uses quantum bits or qubits...'
+						: 'You are an expert in physics.',
+				tokens: Math.floor(Math.random() * 20) + 5,
+			};
 
-  return (
-    <DndContext 
-      collisionDetection={closestCenter}
-      onDragStart={handleDragStart} 
-      onDragEnd={handleDragEnd}
-    >
-      <div className="min-h-screen bg-[#f8fafc] p-8 font-sans text-slate-900">
-        <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8">
-          
-          {/* Header */}
-          <div className="lg:col-span-12 mb-4 flex justify-between items-end">
-            <div>
-              <h1 className="text-4xl font-heading font-bold text-slate-900 mb-2">Context Visualizer</h1>
-              <p className="text-lg text-slate-500 max-w-2xl">
-                Type a message below or drag blocks to build the conversation. Watch the "Scan" effect to see how AI reads history.
-              </p>
-            </div>
-            <button 
-              onClick={() => setMessages(INITIAL_BLOCKS)}
-              className="px-4 py-2 bg-white border border-slate-200 text-slate-600 rounded-lg text-sm font-semibold hover:bg-slate-50 hover:text-slate-900 transition-colors"
-            >
-              Reset Conversation
-            </button>
-          </div>
+			setMessages((items) => [...items, newBlock]);
+			return;
+		}
 
-          {/* Left Sidebar - Palette */}
-          <div className="lg:col-span-3 space-y-6">
-            <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 sticky top-8">
-              <h2 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-2">
-                <Plus className="w-4 h-4" /> Add Blocks
-              </h2>
-              
-              <div className="space-y-3">
-                <SourceBlock type="user" />
-                <SourceBlock type="assistant" />
-                <SourceBlock type="system" />
-              </div>
-              
-              <div className="mt-8 p-4 bg-slate-50 rounded-xl border border-slate-100 text-sm text-slate-600">
-                <div className="flex items-start gap-2">
-                  <Info className="w-4 h-4 mt-0.5 text-slate-400" />
-                  <p>
-                    <strong>Did you know?</strong><br/>
-                    When you send a new message, the AI re-reads every single block above it to understand the context.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
+		// Handle reordering
+		if (active.id !== over.id) {
+			setMessages((items) => {
+				const oldIndex = items.findIndex((i) => i.id === active.id);
+				const newIndex = items.findIndex((i) => i.id === over.id);
+				return arrayMove(items, oldIndex, newIndex);
+			});
+		}
+	};
 
-          {/* Main Area - Context Window */}
-          <div className="lg:col-span-6">
-            <div className="bg-white rounded-3xl shadow-lg border border-slate-100 min-h-[600px] flex flex-col overflow-hidden relative">
-              
-              {/* Window Header */}
-              <div className="p-4 border-b bg-slate-50/50 flex items-center justify-between z-10 relative">
-                <div className="flex items-center gap-2">
-                  <div className="flex gap-1.5">
-                    <div className="w-3 h-3 rounded-full bg-red-400/30" />
-                    <div className="w-3 h-3 rounded-full bg-yellow-400/30" />
-                    <div className="w-3 h-3 rounded-full bg-green-400/30" />
-                  </div>
-                  <span className="text-sm font-medium text-slate-400 ml-2">context_window.json</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  {isAiThinking && (
-                    <span className="text-xs font-bold text-primary animate-pulse">Reading Context...</span>
-                  )}
-                  <span className="text-xs font-bold text-slate-300 uppercase">Read Direction <ArrowDown className="inline w-3 h-3" /></span>
-                </div>
-              </div>
+	const handleDelete = (id: string) => {
+		setMessages(messages.filter((m) => m.id !== id));
+	};
 
-              {/* Scrollable Area */}
-              <div className="flex-1 p-6 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] bg-fixed relative">
-                <SortableContext 
-                  items={messages}
-                  strategy={verticalListSortingStrategy}
-                >
-                  <div className="space-y-4 pb-20">
-                    <AnimatePresence>
-                      {messages.map((msg, index) => (
-                        <motion.div
-                          key={msg.id}
-                          initial={{ opacity: 0, y: 20, scale: 0.95 }}
-                          animate={{ 
-                            opacity: 1, 
-                            y: 0, 
-                            scale: scanningIndex === index ? 1.05 : 1,
-                            borderColor: scanningIndex === index ? 'var(--primary)' : undefined
-                          }}
-                          exit={{ opacity: 0, x: -20 }}
-                          transition={{ duration: 0.2 }}
-                          className={cn(
-                            "transition-all duration-300",
-                            scanningIndex === index ? "ring-2 ring-primary ring-offset-2 rounded-xl z-10" : ""
-                          )}
-                        >
-                          <SortableMessage message={msg} onDelete={handleDelete} />
-                        </motion.div>
-                      ))}
-                    </AnimatePresence>
-                    
-                    {isAiThinking && (
-                      <motion.div 
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        className="flex items-center gap-2 text-slate-400 text-sm p-4"
-                      >
-                        <Bot className="w-4 h-4 animate-bounce" />
-                        <span className="animate-pulse">AI is generating response...</span>
-                      </motion.div>
-                    )}
+	return (
+		<DndContext
+			collisionDetection={closestCenter}
+			onDragStart={handleDragStart}
+			onDragEnd={handleDragEnd}
+		>
+			<div className="min-h-screen bg-[#f8fafc] p-8 font-sans text-slate-900">
+				<div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8">
+					{/* Header */}
+					<div className="lg:col-span-12 mb-4 flex justify-between items-end">
+						<div>
+							<h1 className="text-4xl font-heading font-bold text-slate-900 mb-2">
+								Context Visualizer
+							</h1>
+							<p className="text-lg text-slate-500 max-w-2xl">
+								Type a message below or drag blocks to build the conversation.
+								Watch the "Scan" effect to see how AI reads history.
+							</p>
+						</div>
+						<button
+							onClick={() => setMessages(INITIAL_BLOCKS)}
+							className="px-4 py-2 bg-white border border-slate-200 text-slate-600 rounded-lg text-sm font-semibold hover:bg-slate-50 hover:text-slate-900 transition-colors"
+						>
+							Reset Conversation
+						</button>
+					</div>
 
-                    {messages.length === 0 && (
-                      <div className="h-40 flex items-center justify-center border-2 border-dashed border-slate-200 rounded-xl text-slate-400">
-                        Type below or drag blocks to start
-                      </div>
-                    )}
-                  </div>
-                </SortableContext>
-              </div>
+					{/* Left Sidebar - Palette */}
+					<div className="lg:col-span-3 space-y-6">
+						<div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 sticky top-8">
+							<h2 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-2">
+								<Plus className="w-4 h-4" /> Add Blocks
+							</h2>
 
-              {/* Footer Input */}
-              <div className="p-4 border-t bg-white z-10 relative">
-                <form onSubmit={handleSendMessage} className="flex gap-2">
-                  <input 
-                    type="text"
-                    value={inputValue}
-                    onChange={(e) => setInputValue(e.target.value)}
-                    placeholder="Type a message to simulate a conversation..."
-                    className="flex-1 h-12 bg-slate-50 rounded-xl border border-slate-200 px-4 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-                    disabled={isAiThinking}
-                  />
-                  <button 
-                    type="submit"
-                    disabled={!inputValue.trim() || isAiThinking}
-                    className="h-12 px-6 bg-primary text-white font-bold rounded-xl hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm shadow-primary/20"
-                  >
-                    Send
-                  </button>
-                </form>
-              </div>
-            </div>
-          </div>
+							<div className="space-y-3">
+								<SourceBlock type="user" />
+								<SourceBlock type="assistant" />
+								<SourceBlock type="system" />
+							</div>
 
-          {/* Right Sidebar - Stats */}
-          <div className="lg:col-span-3">
-            <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 sticky top-8 space-y-6">
-              <h2 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4">Context Usage</h2>
-              
-              <div>
-                <div className="flex justify-between text-sm mb-2 font-medium">
-                  <span>Tokens Used</span>
-                  <span>{totalTokens} / {maxContext}</span>
-                </div>
-                <div className="h-4 bg-slate-100 rounded-full overflow-hidden">
-                  <motion.div 
-                    className="h-full bg-primary"
-                    initial={{ width: 0 }}
-                    animate={{ width: `${Math.max(usagePercent, 2)}%` }}
-                    transition={{ type: "spring", stiffness: 100 }}
-                  />
-                </div>
-                <p className="text-xs text-slate-400 mt-2">
-                  As you add more blocks, older messages might get "pushed out" if the context limit is reached.
-                </p>
-              </div>
+							<div className="mt-8 p-4 bg-slate-50 rounded-xl border border-slate-100 text-sm text-slate-600">
+								<div className="flex items-start gap-2">
+									<Info className="w-4 h-4 mt-0.5 text-slate-400" />
+									<p>
+										<strong>Did you know?</strong>
+										<br />
+										When you send a new message, the AI re-reads every single
+										block above it to understand the context.
+									</p>
+								</div>
+							</div>
+						</div>
+					</div>
 
-              <div className="pt-6 border-t border-slate-100">
-                <h3 className="text-sm font-bold text-slate-900 mb-2">What is Context?</h3>
-                <p className="text-sm text-slate-500 leading-relaxed">
-                  LLMs don't have a real memory. They just see the entire conversation history sent to them every time you press send. This history is called "Context."
-                </p>
-              </div>
-            </div>
-          </div>
+					{/* Main Area - Context Window */}
+					<div className="lg:col-span-6">
+						<div className="bg-white rounded-3xl shadow-lg border border-slate-100 min-h-[600px] flex flex-col overflow-hidden relative">
+							{/* Window Header */}
+							<div className="p-4 border-b bg-slate-50/50 flex items-center justify-between z-10 relative">
+								<div className="flex items-center gap-2">
+									<div className="flex gap-1.5">
+										<div className="w-3 h-3 rounded-full bg-red-400/30" />
+										<div className="w-3 h-3 rounded-full bg-yellow-400/30" />
+										<div className="w-3 h-3 rounded-full bg-green-400/30" />
+									</div>
+									<span className="text-sm font-medium text-slate-400 ml-2">
+										context_window.json
+									</span>
+								</div>
+								<div className="flex items-center gap-2">
+									{isAiThinking && (
+										<span className="text-xs font-bold text-primary animate-pulse">
+											Reading Context...
+										</span>
+									)}
+									<span className="text-xs font-bold text-slate-300 uppercase">
+										Read Direction <ArrowDown className="inline w-3 h-3" />
+									</span>
+								</div>
+							</div>
 
-        </div>
+							{/* Scrollable Area */}
+							<div className="flex-1 p-6 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] bg-fixed relative">
+								<SortableContext
+									items={messages}
+									strategy={verticalListSortingStrategy}
+								>
+									<div className="space-y-4 pb-20">
+										<AnimatePresence>
+											{messages.map((msg, index) => (
+												<motion.div
+													key={msg.id}
+													initial={{ opacity: 0, y: 20, scale: 0.95 }}
+													animate={{
+														opacity: 1,
+														y: 0,
+														scale: scanningIndex === index ? 1.05 : 1,
+														borderColor:
+															scanningIndex === index
+																? 'var(--primary)'
+																: undefined,
+													}}
+													exit={{ opacity: 0, x: -20 }}
+													transition={{ duration: 0.2 }}
+													className={cn(
+														'transition-all duration-300',
+														scanningIndex === index
+															? 'ring-2 ring-primary ring-offset-2 rounded-xl z-10'
+															: ''
+													)}
+												>
+													<SortableMessage
+														message={msg}
+														onDelete={handleDelete}
+													/>
+												</motion.div>
+											))}
+										</AnimatePresence>
 
-        {/* Global Overlay */}
-        <DragOverlay>
-          {activeId && !draggedType ? (
-             <div className="opacity-90 scale-105 shadow-2xl">
-               <SortableMessage 
-                 message={messages.find(m => m.id === activeId)!} 
-                 onDelete={() => {}} 
-               />
-             </div>
-          ) : null}
-          {draggedType ? (
-             <div className="opacity-90 scale-105 rotate-2 cursor-grabbing">
-               <SourceBlock type={draggedType} />
-             </div>
-          ) : null}
-        </DragOverlay>
+										{isAiThinking && (
+											<motion.div
+												initial={{ opacity: 0 }}
+												animate={{ opacity: 1 }}
+												className="flex items-center gap-2 text-slate-400 text-sm p-4"
+											>
+												<Bot className="w-4 h-4 animate-bounce" />
+												<span className="animate-pulse">
+													AI is generating response...
+												</span>
+											</motion.div>
+										)}
 
-      </div>
-    </DndContext>
-  );
+										{messages.length === 0 && (
+											<div className="h-40 flex items-center justify-center border-2 border-dashed border-slate-200 rounded-xl text-slate-400">
+												Type below or drag blocks to start
+											</div>
+										)}
+									</div>
+								</SortableContext>
+							</div>
+
+							{/* Footer Input */}
+							<div className="p-4 border-t bg-white z-10 relative">
+								<form onSubmit={handleSendMessage} className="flex gap-2">
+									<input
+										type="text"
+										value={inputValue}
+										onChange={(e) => setInputValue(e.target.value)}
+										placeholder="Type a message to simulate a conversation..."
+										className="flex-1 h-12 bg-slate-50 rounded-xl border border-slate-200 px-4 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+										disabled={isAiThinking}
+									/>
+									<button
+										type="submit"
+										disabled={!inputValue.trim() || isAiThinking}
+										className="h-12 px-6 bg-primary text-white font-bold rounded-xl hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm shadow-primary/20"
+									>
+										Send
+									</button>
+								</form>
+							</div>
+						</div>
+					</div>
+
+					{/* Right Sidebar - Stats */}
+					<div className="lg:col-span-3">
+						<div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 sticky top-8 space-y-6">
+							<h2 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4">
+								Context Usage
+							</h2>
+
+							<div>
+								<div className="flex justify-between text-sm mb-2 font-medium">
+									<span>Tokens Used</span>
+									<span>
+										{totalTokens} / {maxContext}
+									</span>
+								</div>
+								<div className="h-4 bg-slate-100 rounded-full overflow-hidden">
+									<motion.div
+										className="h-full bg-primary"
+										initial={{ width: 0 }}
+										animate={{ width: `${Math.max(usagePercent, 2)}%` }}
+										transition={{ type: 'spring', stiffness: 100 }}
+									/>
+								</div>
+							</div>
+
+							<div className="pt-6 border-t border-slate-100">
+								<h3 className="text-sm font-bold text-slate-900 mb-2">
+									What is Context?
+								</h3>
+								<p className="text-sm text-slate-500 leading-relaxed">
+									LLMs don't have a real memory. They just see the entire
+									conversation history sent to them every time you press send.
+									This history is called "Context."
+								</p>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				{/* Global Overlay */}
+				<DragOverlay>
+					{activeId && !draggedType ? (
+						<div className="opacity-90 scale-105 shadow-2xl">
+							<SortableMessage
+								message={messages.find((m) => m.id === activeId)!}
+								onDelete={() => {}}
+							/>
+						</div>
+					) : null}
+					{draggedType ? (
+						<div className="opacity-90 scale-105 rotate-2 cursor-grabbing">
+							<SourceBlock type={draggedType} />
+						</div>
+					) : null}
+				</DragOverlay>
+			</div>
+		</DndContext>
+	);
 }
