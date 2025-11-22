@@ -146,11 +146,53 @@ export default function ContextPlayground() {
   const [messages, setMessages] = useState<MessageBlock[]>(INITIAL_BLOCKS);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [draggedType, setDraggedType] = useState<BlockType | null>(null);
+  const [inputValue, setInputValue] = useState("");
+  const [isAiThinking, setIsAiThinking] = useState(false);
+  const [scanningIndex, setScanningIndex] = useState<number | null>(null);
 
   // Calculate Stats
   const totalTokens = messages.reduce((acc, msg) => acc + msg.tokens, 0);
   const maxContext = 4096;
   const usagePercent = (totalTokens / maxContext) * 100;
+
+  const handleSendMessage = async (e?: React.FormEvent) => {
+    e?.preventDefault();
+    if (!inputValue.trim()) return;
+
+    // 1. Add User Message
+    const userMsg: MessageBlock = {
+      id: nanoid(),
+      type: 'user',
+      content: inputValue,
+      tokens: Math.ceil(inputValue.length / 4),
+    };
+    
+    setMessages(prev => [...prev, userMsg]);
+    setInputValue("");
+    setIsAiThinking(true);
+
+    // 2. Simulate "Reading Context" (Scanning Animation)
+    // Scan through each message before generating response
+    for (let i = 0; i <= messages.length; i++) {
+      setScanningIndex(i);
+      await new Promise(r => setTimeout(r, 300)); // Speed of reading
+    }
+    setScanningIndex(null);
+
+    // 3. Simulate AI Generation Delay
+    await new Promise(r => setTimeout(r, 800));
+
+    // 4. Add AI Response
+    const aiMsg: MessageBlock = {
+      id: nanoid(),
+      type: 'assistant',
+      content: "That's an interesting point! Because I'm a simulated AI for this demo, I'm just echoing that I received your message. In a real system, I would use all the blocks above to generate this answer.",
+      tokens: 35,
+    };
+
+    setMessages(prev => [...prev, aiMsg]);
+    setIsAiThinking(false);
+  };
 
   const handleDragStart = (event: DragStartEvent) => {
     const { active } = event;
@@ -160,7 +202,8 @@ export default function ContextPlayground() {
       setDraggedType(active.data.current.type);
     }
   };
-
+  
+  // ... existing handleDragEnd ...
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     setActiveId(null);
@@ -214,7 +257,7 @@ export default function ContextPlayground() {
             <div>
               <h1 className="text-4xl font-heading font-bold text-slate-900 mb-2">Context Visualizer</h1>
               <p className="text-lg text-slate-500 max-w-2xl">
-                Drag blocks from the left to build the conversation context. See how the AI's memory grows with each interaction.
+                Type a message below or drag blocks to build the conversation. Watch the "Scan" effect to see how AI reads history.
               </p>
             </div>
             <button 
@@ -242,8 +285,8 @@ export default function ContextPlayground() {
                 <div className="flex items-start gap-2">
                   <Info className="w-4 h-4 mt-0.5 text-slate-400" />
                   <p>
-                    <strong>How it works:</strong><br/>
-                    The AI reads the entire stack from top to bottom every time it generates a new response.
+                    <strong>Did you know?</strong><br/>
+                    When you send a new message, the AI re-reads every single block above it to understand the context.
                   </p>
                 </div>
               </div>
@@ -252,10 +295,10 @@ export default function ContextPlayground() {
 
           {/* Main Area - Context Window */}
           <div className="lg:col-span-6">
-            <div className="bg-white rounded-3xl shadow-lg border border-slate-100 min-h-[600px] flex flex-col overflow-hidden">
+            <div className="bg-white rounded-3xl shadow-lg border border-slate-100 min-h-[600px] flex flex-col overflow-hidden relative">
               
               {/* Window Header */}
-              <div className="p-4 border-b bg-slate-50/50 flex items-center justify-between">
+              <div className="p-4 border-b bg-slate-50/50 flex items-center justify-between z-10 relative">
                 <div className="flex items-center gap-2">
                   <div className="flex gap-1.5">
                     <div className="w-3 h-3 rounded-full bg-red-400/30" />
@@ -264,44 +307,83 @@ export default function ContextPlayground() {
                   </div>
                   <span className="text-sm font-medium text-slate-400 ml-2">context_window.json</span>
                 </div>
-                <span className="text-xs font-bold text-slate-300 uppercase">Read Direction <ArrowDown className="inline w-3 h-3" /></span>
+                <div className="flex items-center gap-2">
+                  {isAiThinking && (
+                    <span className="text-xs font-bold text-primary animate-pulse">Reading Context...</span>
+                  )}
+                  <span className="text-xs font-bold text-slate-300 uppercase">Read Direction <ArrowDown className="inline w-3 h-3" /></span>
+                </div>
               </div>
 
               {/* Scrollable Area */}
-              <div className="flex-1 p-6 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] bg-fixed">
+              <div className="flex-1 p-6 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] bg-fixed relative">
                 <SortableContext 
                   items={messages}
                   strategy={verticalListSortingStrategy}
                 >
                   <div className="space-y-4 pb-20">
                     <AnimatePresence>
-                      {messages.map((msg) => (
+                      {messages.map((msg, index) => (
                         <motion.div
                           key={msg.id}
                           initial={{ opacity: 0, y: 20, scale: 0.95 }}
-                          animate={{ opacity: 1, y: 0, scale: 1 }}
+                          animate={{ 
+                            opacity: 1, 
+                            y: 0, 
+                            scale: scanningIndex === index ? 1.05 : 1,
+                            borderColor: scanningIndex === index ? 'var(--primary)' : undefined
+                          }}
                           exit={{ opacity: 0, x: -20 }}
                           transition={{ duration: 0.2 }}
+                          className={cn(
+                            "transition-all duration-300",
+                            scanningIndex === index ? "ring-2 ring-primary ring-offset-2 rounded-xl z-10" : ""
+                          )}
                         >
                           <SortableMessage message={msg} onDelete={handleDelete} />
                         </motion.div>
                       ))}
                     </AnimatePresence>
                     
+                    {isAiThinking && (
+                      <motion.div 
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className="flex items-center gap-2 text-slate-400 text-sm p-4"
+                      >
+                        <Bot className="w-4 h-4 animate-bounce" />
+                        <span className="animate-pulse">AI is generating response...</span>
+                      </motion.div>
+                    )}
+
                     {messages.length === 0 && (
                       <div className="h-40 flex items-center justify-center border-2 border-dashed border-slate-200 rounded-xl text-slate-400">
-                        Drag blocks here to start
+                        Type below or drag blocks to start
                       </div>
                     )}
                   </div>
                 </SortableContext>
               </div>
 
-              {/* Footer Input Simulation */}
-              <div className="p-4 border-t bg-white">
-                <div className="h-12 bg-slate-50 rounded-xl border border-slate-100 flex items-center px-4 text-slate-400">
-                  <span className="animate-pulse">Waiting for next input...</span>
-                </div>
+              {/* Footer Input */}
+              <div className="p-4 border-t bg-white z-10 relative">
+                <form onSubmit={handleSendMessage} className="flex gap-2">
+                  <input 
+                    type="text"
+                    value={inputValue}
+                    onChange={(e) => setInputValue(e.target.value)}
+                    placeholder="Type a message to simulate a conversation..."
+                    className="flex-1 h-12 bg-slate-50 rounded-xl border border-slate-200 px-4 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                    disabled={isAiThinking}
+                  />
+                  <button 
+                    type="submit"
+                    disabled={!inputValue.trim() || isAiThinking}
+                    className="h-12 px-6 bg-primary text-white font-bold rounded-xl hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm shadow-primary/20"
+                  >
+                    Send
+                  </button>
+                </form>
               </div>
             </div>
           </div>
