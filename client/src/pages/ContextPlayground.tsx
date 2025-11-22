@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { DndContext, DragOverlay, useDraggable, useDroppable, DragEndEvent, DragStartEvent, closestCenter } from '@dnd-kit/core';
+import { DndContext, DragOverlay, useDraggable, DragEndEvent, DragStartEvent, closestCenter } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { nanoid } from 'nanoid';
@@ -201,82 +201,74 @@ export default function ContextPlayground() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] p-8 font-sans text-slate-900">
-      <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8">
-        
-        {/* Header */}
-        <div className="lg:col-span-12 mb-4 flex justify-between items-end">
-          <div>
-            <h1 className="text-4xl font-heading font-bold text-slate-900 mb-2">Context Visualizer</h1>
-            <p className="text-lg text-slate-500 max-w-2xl">
-              Drag blocks from the left to build the conversation context. See how the AI's memory grows with each interaction.
-            </p>
+    <DndContext 
+      collisionDetection={closestCenter}
+      onDragStart={handleDragStart} 
+      onDragEnd={handleDragEnd}
+    >
+      <div className="min-h-screen bg-[#f8fafc] p-8 font-sans text-slate-900">
+        <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8">
+          
+          {/* Header */}
+          <div className="lg:col-span-12 mb-4 flex justify-between items-end">
+            <div>
+              <h1 className="text-4xl font-heading font-bold text-slate-900 mb-2">Context Visualizer</h1>
+              <p className="text-lg text-slate-500 max-w-2xl">
+                Drag blocks from the left to build the conversation context. See how the AI's memory grows with each interaction.
+              </p>
+            </div>
+            <button 
+              onClick={() => setMessages(INITIAL_BLOCKS)}
+              className="px-4 py-2 bg-white border border-slate-200 text-slate-600 rounded-lg text-sm font-semibold hover:bg-slate-50 hover:text-slate-900 transition-colors"
+            >
+              Reset Conversation
+            </button>
           </div>
-          <button 
-            onClick={() => setMessages(INITIAL_BLOCKS)}
-            className="px-4 py-2 bg-white border border-slate-200 text-slate-600 rounded-lg text-sm font-semibold hover:bg-slate-50 hover:text-slate-900 transition-colors"
-          >
-            Reset Conversation
-          </button>
-        </div>
 
-        {/* Left Sidebar - Palette */}
-        <div className="lg:col-span-3 space-y-6">
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 sticky top-8">
-            <h2 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-2">
-              <Plus className="w-4 h-4" /> Add Blocks
-            </h2>
-            <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+          {/* Left Sidebar - Palette */}
+          <div className="lg:col-span-3 space-y-6">
+            <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 sticky top-8">
+              <h2 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-2">
+                <Plus className="w-4 h-4" /> Add Blocks
+              </h2>
+              
               <div className="space-y-3">
                 <SourceBlock type="user" />
                 <SourceBlock type="assistant" />
                 <SourceBlock type="system" />
               </div>
-              <DragOverlay>
-                {draggedType ? (
-                  <div className="opacity-90 scale-105 rotate-2">
-                    <SourceBlock type={draggedType} />
-                  </div>
-                ) : null}
-              </DragOverlay>
-            </DndContext>
-
-            <div className="mt-8 p-4 bg-slate-50 rounded-xl border border-slate-100 text-sm text-slate-600">
-              <div className="flex items-start gap-2">
-                <Info className="w-4 h-4 mt-0.5 text-slate-400" />
-                <p>
-                  <strong>How it works:</strong><br/>
-                  The AI reads the entire stack from top to bottom every time it generates a new response.
-                </p>
+              
+              <div className="mt-8 p-4 bg-slate-50 rounded-xl border border-slate-100 text-sm text-slate-600">
+                <div className="flex items-start gap-2">
+                  <Info className="w-4 h-4 mt-0.5 text-slate-400" />
+                  <p>
+                    <strong>How it works:</strong><br/>
+                    The AI reads the entire stack from top to bottom every time it generates a new response.
+                  </p>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        {/* Main Area - Context Window */}
-        <div className="lg:col-span-6">
-          <div className="bg-white rounded-3xl shadow-lg border border-slate-100 min-h-[600px] flex flex-col overflow-hidden">
-            
-            {/* Window Header */}
-            <div className="p-4 border-b bg-slate-50/50 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="flex gap-1.5">
-                  <div className="w-3 h-3 rounded-full bg-red-400/30" />
-                  <div className="w-3 h-3 rounded-full bg-yellow-400/30" />
-                  <div className="w-3 h-3 rounded-full bg-green-400/30" />
+          {/* Main Area - Context Window */}
+          <div className="lg:col-span-6">
+            <div className="bg-white rounded-3xl shadow-lg border border-slate-100 min-h-[600px] flex flex-col overflow-hidden">
+              
+              {/* Window Header */}
+              <div className="p-4 border-b bg-slate-50/50 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="flex gap-1.5">
+                    <div className="w-3 h-3 rounded-full bg-red-400/30" />
+                    <div className="w-3 h-3 rounded-full bg-yellow-400/30" />
+                    <div className="w-3 h-3 rounded-full bg-green-400/30" />
+                  </div>
+                  <span className="text-sm font-medium text-slate-400 ml-2">context_window.json</span>
                 </div>
-                <span className="text-sm font-medium text-slate-400 ml-2">context_window.json</span>
+                <span className="text-xs font-bold text-slate-300 uppercase">Read Direction <ArrowDown className="inline w-3 h-3" /></span>
               </div>
-              <span className="text-xs font-bold text-slate-300 uppercase">Read Direction <ArrowDown className="inline w-3 h-3" /></span>
-            </div>
 
-            {/* Scrollable Area */}
-            <div className="flex-1 p-6 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] bg-fixed">
-              <DndContext 
-                collisionDetection={closestCenter}
-                onDragStart={handleDragStart}
-                onDragEnd={handleDragEnd}
-              >
+              {/* Scrollable Area */}
+              <div className="flex-1 p-6 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] bg-fixed">
                 <SortableContext 
                   items={messages}
                   strategy={verticalListSortingStrategy}
@@ -303,64 +295,69 @@ export default function ContextPlayground() {
                     )}
                   </div>
                 </SortableContext>
-                
-                {/* Overlay for sorting items */}
-                <DragOverlay>
-                  {activeId && !draggedType ? (
-                     <div className="opacity-90 scale-105 shadow-2xl">
-                       {/* Re-render the active item for overlay */}
-                       <SortableMessage 
-                         message={messages.find(m => m.id === activeId)!} 
-                         onDelete={() => {}} 
-                       />
-                     </div>
-                  ) : null}
-                </DragOverlay>
-              </DndContext>
-            </div>
+              </div>
 
-            {/* Footer Input Simulation */}
-            <div className="p-4 border-t bg-white">
-              <div className="h-12 bg-slate-50 rounded-xl border border-slate-100 flex items-center px-4 text-slate-400">
-                <span className="animate-pulse">Waiting for next input...</span>
+              {/* Footer Input Simulation */}
+              <div className="p-4 border-t bg-white">
+                <div className="h-12 bg-slate-50 rounded-xl border border-slate-100 flex items-center px-4 text-slate-400">
+                  <span className="animate-pulse">Waiting for next input...</span>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        {/* Right Sidebar - Stats */}
-        <div className="lg:col-span-3">
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 sticky top-8 space-y-6">
-            <h2 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4">Context Usage</h2>
-            
-            <div>
-              <div className="flex justify-between text-sm mb-2 font-medium">
-                <span>Tokens Used</span>
-                <span>{totalTokens} / {maxContext}</span>
+          {/* Right Sidebar - Stats */}
+          <div className="lg:col-span-3">
+            <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 sticky top-8 space-y-6">
+              <h2 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4">Context Usage</h2>
+              
+              <div>
+                <div className="flex justify-between text-sm mb-2 font-medium">
+                  <span>Tokens Used</span>
+                  <span>{totalTokens} / {maxContext}</span>
+                </div>
+                <div className="h-4 bg-slate-100 rounded-full overflow-hidden">
+                  <motion.div 
+                    className="h-full bg-primary"
+                    initial={{ width: 0 }}
+                    animate={{ width: `${Math.max(usagePercent, 2)}%` }}
+                    transition={{ type: "spring", stiffness: 100 }}
+                  />
+                </div>
+                <p className="text-xs text-slate-400 mt-2">
+                  As you add more blocks, older messages might get "pushed out" if the context limit is reached.
+                </p>
               </div>
-              <div className="h-4 bg-slate-100 rounded-full overflow-hidden">
-                <motion.div 
-                  className="h-full bg-primary"
-                  initial={{ width: 0 }}
-                  animate={{ width: `${Math.max(usagePercent, 2)}%` }}
-                  transition={{ type: "spring", stiffness: 100 }}
-                />
-              </div>
-              <p className="text-xs text-slate-400 mt-2">
-                As you add more blocks, older messages might get "pushed out" if the context limit is reached.
-              </p>
-            </div>
 
-            <div className="pt-6 border-t border-slate-100">
-              <h3 className="text-sm font-bold text-slate-900 mb-2">What is Context?</h3>
-              <p className="text-sm text-slate-500 leading-relaxed">
-                LLMs don't have a real memory. They just see the entire conversation history sent to them every time you press send. This history is called "Context."
-              </p>
+              <div className="pt-6 border-t border-slate-100">
+                <h3 className="text-sm font-bold text-slate-900 mb-2">What is Context?</h3>
+                <p className="text-sm text-slate-500 leading-relaxed">
+                  LLMs don't have a real memory. They just see the entire conversation history sent to them every time you press send. This history is called "Context."
+                </p>
+              </div>
             </div>
           </div>
+
         </div>
+
+        {/* Global Overlay */}
+        <DragOverlay>
+          {activeId && !draggedType ? (
+             <div className="opacity-90 scale-105 shadow-2xl">
+               <SortableMessage 
+                 message={messages.find(m => m.id === activeId)!} 
+                 onDelete={() => {}} 
+               />
+             </div>
+          ) : null}
+          {draggedType ? (
+             <div className="opacity-90 scale-105 rotate-2 cursor-grabbing">
+               <SourceBlock type={draggedType} />
+             </div>
+          ) : null}
+        </DragOverlay>
 
       </div>
-    </div>
+    </DndContext>
   );
 }
